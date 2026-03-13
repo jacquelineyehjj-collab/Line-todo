@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>群組待辦清單</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+
+:root {
+–g: #06C755;
+–g2: #05a847;
+–bg: #EAEAEA;
+–white: #fff;
+–text: #1a1a1a;
+–sub: #999;
+–border: #ebebeb;
+–row-done: #f6fef9;
+–shadow: 0 2px 14px rgba(0,0,0,0.09);
+–r: 16px;
+}
+
+- { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+font-family: ‘Noto Sans TC’, sans-serif;
+background: var(–bg);
+min-height: 100vh;
+max-width: 430px;
+margin: 0 auto;
+display: flex;
+flex-direction: column;
+}
+
+/* ── HEADER ── */
+.header {
+background: var(–white);
+border-bottom: 1px solid var(–border);
+padding: 13px 16px;
+display: flex;
+align-items: center;
+gap: 10px;
+position: sticky; top: 0; z-index: 20;
+box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.h-icon {
+width: 38px; height: 38px;
+background: var(–g);
+border-radius: 50%;
+display: flex; align-items: center; justify-content: center;
+font-size: 18px; flex-shrink: 0;
+}
+.h-title { font-size: 15px; font-weight: 700; }
+.h-sub { font-size: 11px; color: var(–sub); margin-top: 1px; }
+.h-badge {
+margin-left: auto;
+background: var(–g);
+color: #fff;
+font-size: 11px; font-weight: 700;
+border-radius: 12px;
+padding: 3px 10px;
+}
+
+/* ── CHAT ── */
+.chat {
+flex: 1;
+padding: 14px 12px 110px;
+display: flex;
+flex-direction: column;
+gap: 10px;
+overflow-y: auto;
+}
+
+.sys { text-align: center; font-size: 11px; color: var(–sub); background: rgba(255,255,255,.7); border-radius: 20px; padding: 4px 14px; align-self: center; }
+
+.bwrap { display: flex; align-items: flex-start; gap: 8px; }
+.bwrap.me { flex-direction: row-reverse; }
+
+.av {
+width: 34px; height: 34px;
+border-radius: 50%;
+font-size: 13px; font-weight: 700;
+color: #fff;
+display: flex; align-items: center; justify-content: center;
+flex-shrink: 0;
+}
+.bcol { display: flex; flex-direction: column; gap: 3px; max-width: 92%; }
+.bcol.me { align-items: flex-end; }
+.sname { font-size: 11px; color: var(–sub); padding-left: 2px; }
+.tbubble {
+background: var(–white);
+border-radius: 14px;
+padding: 8px 12px;
+font-size: 13px; color: var(–text);
+line-height: 1.5;
+box-shadow: var(–shadow);
+max-width: 180px;
+}
+.bwrap.me .tbubble { background: #c6f6d8; }
+.btime { font-size: 10px; color: var(–sub); padding: 0 3px; align-self: flex-end; }
+
+/* ── CARD (bubble) ── */
+.card {
+background: var(–white);
+border-radius: var(–r);
+box-shadow: var(–shadow);
+overflow: hidden;
+width: min(340px, calc(100vw - 80px));
+}
+
+.card-head {
+background: var(–g);
+padding: 11px 14px;
+display: flex; align-items: center; gap: 8px;
+}
+.card-head-title { color: #fff; font-size: 13px; font-weight: 700; flex: 1; }
+.card-head-cnt {
+background: rgba(255,255,255,.25);
+color: #fff;
+font-size: 11px; font-weight: 700;
+border-radius: 10px;
+padding: 2px 8px;
+}
+
+/* ── TABLE SCROLL WRAPPER ── */
+.tscroll {
+overflow-x: auto;
+-webkit-overflow-scrolling: touch;
+position: relative;
+}
+.tscroll::-webkit-scrollbar { height: 3px; }
+.tscroll::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }
+
+/* scroll hint fade */
+.tscroll::after {
+content: ‘’;
+position: absolute;
+right: 0; top: 0;
+width: 24px; height: 100%;
+background: linear-gradient(to right, transparent, rgba(255,255,255,.85));
+pointer-events: none;
+}
+
+table {
+width: max-content;
+border-collapse: collapse;
+font-size: 12px;
+}
+
+/* col widths */
+table colgroup .col-check  { width: 36px; }
+table colgroup .col-task   { width: 120px; }
+table colgroup .col-due    { width: 80px; }
+table colgroup .col-when   { width: 80px; }
+table colgroup .col-prep   { width: 120px; }
+
+thead tr th {
+background: #f7f7f7;
+color: var(–sub);
+font-weight: 600;
+font-size: 10px;
+padding: 7px 10px;
+text-align: left;
+border-bottom: 1px solid var(–border);
+white-space: nowrap;
+position: sticky; top: 0;
+}
+thead tr th:first-child { text-align: center; padding: 7px 6px; }
+
+tbody tr {
+border-bottom: 1px solid var(–border);
+transition: background .15s;
+}
+tbody tr:last-child { border-bottom: none; }
+tbody tr.done { background: var(–row-done); }
+
+tbody td { padding: 9px 10px; vertical-align: middle; color: var(–text); line-height: 1.4; }
+tbody td.task-cell { font-weight: 500; }
+tbody tr.done td { color: #aaa; }
+tbody tr.done td.task-cell { text-decoration: line-through; text-decoration-color: var(–g); color: #aaa; }
+
+/* check cell */
+td.check-cell { text-align: center; padding: 9px 6px; cursor: pointer; }
+.ck {
+width: 20px; height: 20px;
+border: 2px solid #ccc;
+border-radius: 50%;
+display: inline-flex; align-items: center; justify-content: center;
+transition: all .2s;
+}
+.done .ck { background: var(–g); border-color: var(–g); }
+.ck svg { display: none; }
+.done .ck svg { display: block; }
+
+/* done-by tag */
+.done-by {
+display: inline-flex; align-items: center; gap: 4px;
+background: #e8faf0;
+border: 1px solid #b6e9c8;
+border-radius: 10px;
+padding: 1px 6px;
+font-size: 10px; color: #2d8a52;
+margin-top: 3px;
+white-space: nowrap;
+}
+.done-by .dav {
+width: 14px; height: 14px;
+border-radius: 50%;
+font-size: 7px; font-weight: 700; color: #fff;
+display: inline-flex; align-items: center; justify-content: center;
+}
+
+/* due / when colors */
+.due-soon { color: #e67e22; font-weight: 600; }
+.due-past { color: #e74c3c; font-weight: 600; }
+
+/* ── ADD ROW ── */
+.add-section {
+border-top: 1px solid var(–border);
+padding: 10px 12px;
+}
+.add-btn-row {
+display: flex; align-items: center; gap: 6px;
+cursor: pointer;
+color: var(–sub);
+font-size: 12px;
+padding: 4px 2px;
+}
+.add-btn-row:hover { color: var(–g); }
+.add-form { display: none; flex-direction: column; gap: 6px; margin-top: 8px; }
+.add-form.open { display: flex; }
+
+.fi-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.fi {
+flex: 1; min-width: 100px;
+border: 1px solid #e0e0e0;
+border-radius: 8px;
+padding: 6px 10px;
+font-size: 12px;
+font-family: inherit;
+color: var(–text);
+outline: none;
+transition: border-color .2s;
+}
+.fi:focus { border-color: var(–g); }
+.fi::placeholder { color: #ccc; }
+.fi-full { flex: 1 1 100%; }
+
+.submit-row { display: flex; gap: 6px; justify-content: flex-end; }
+.btn-cancel {
+border: 1px solid #ddd; background: #fff;
+border-radius: 8px; padding: 6px 14px;
+font-size: 12px; font-family: inherit; cursor: pointer; color: var(–sub);
+}
+.btn-add {
+background: var(–g); border: none; color: #fff;
+border-radius: 8px; padding: 6px 16px;
+font-size: 12px; font-family: inherit; cursor: pointer; font-weight: 700;
+}
+.btn-add:active { background: var(–g2); }
+
+/* ── BOTTOM BAR ── */
+.bar {
+position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+width: 100%; max-width: 430px;
+background: var(–white);
+border-top: 1px solid var(–border);
+padding: 10px 12px;
+display: flex; gap: 8px; align-items: center;
+box-shadow: 0 -2px 10px rgba(0,0,0,.06);
+z-index: 20;
+}
+
+.user-wrap { position: relative; }
+.user-btn {
+display: flex; align-items: center; gap: 5px;
+background: #f4f4f4;
+border: none; border-radius: 20px;
+padding: 6px 10px;
+font-family: inherit; font-size: 12px; font-weight: 600;
+cursor: pointer; white-space: nowrap;
+}
+.udrop {
+position: absolute; bottom: calc(100% + 6px); left: 0;
+background: var(–white);
+border-radius: 12px;
+box-shadow: 0 4px 20px rgba(0,0,0,.14);
+overflow: hidden;
+display: none; min-width: 130px; z-index: 30;
+}
+.udrop.open { display: block; }
+.uopt {
+display: flex; align-items: center; gap: 8px;
+padding: 9px 12px; cursor: pointer;
+font-size: 12px; color: var(–text);
+transition: background .1s;
+}
+.uopt:hover { background: #f4f4f4; }
+.uopt.active { background: #e8faf0; font-weight: 700; }
+
+.msg-in {
+flex: 1;
+background: #f4f4f4;
+border: none; border-radius: 20px;
+padding: 8px 14px;
+font-size: 13px; font-family: inherit;
+outline: none;
+}
+.send-btn {
+width: 36px; height: 36px;
+background: var(–g); border: none; border-radius: 50%;
+display: flex; align-items: center; justify-content: center;
+cursor: pointer; flex-shrink: 0;
+}
+.send-btn:disabled { background: #ccc; cursor: default; }
+.send-btn:not(:disabled):active { background: var(–g2); }
+
+/* toast */
+.toast {
+position: fixed; bottom: 75px; left: 50%;
+transform: translateX(-50%) translateY(6px);
+background: rgba(0,0,0,.72); color: #fff;
+font-size: 12px; border-radius: 20px;
+padding: 7px 16px; opacity: 0;
+transition: all .28s; pointer-events: none; z-index: 99;
+white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@keyframes pop { 0%{opacity:0;transform:scale(.94)} 60%{transform:scale(1.02)} 100%{opacity:1;transform:scale(1)} }
+.row-new { animation: pop .22s ease; }
+</style>
+
+</head>
+<body>
+
+<div class="header">
+  <div class="h-icon">📋</div>
+  <div>
+    <div class="h-title">共用待辦清單</div>
+    <div class="h-sub" id="hSub">4 位成員</div>
+  </div>
+  <div class="h-badge" id="hBadge">0/0</div>
+</div>
+
+<div class="chat" id="chat">
+  <div class="sys">今天</div>
+
+  <div class="bwrap">
+    <div class="av" style="background:#06C755">🤖</div>
+    <div class="bcol">
+      <div class="sname">小幫手</div>
+      <div class="tbubble">大家好！這是我們的共用待辦清單，任何人都可以打勾或新增事項 👇</div>
+    </div>
+  </div>
+
+  <!-- CARD -->
+
+  <div class="bwrap" id="cardWrap">
+    <div class="av" style="background:#06C755">🤖</div>
+    <div class="bcol">
+      <div class="sname">小幫手</div>
+      <div class="card">
+        <div class="card-head">
+          <span style="font-size:16px">✅</span>
+          <span class="card-head-title">待辦事項</span>
+          <span class="card-head-cnt" id="cardCnt">0/0</span>
+        </div>
+
+```
+    <div class="tscroll">
+      <table>
+        <colgroup>
+          <col class="col-check">
+          <col class="col-task">
+          <col class="col-due">
+          <col class="col-when">
+          <col class="col-prep">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>✓</th>
+            <th>待辦事項</th>
+            <th>完成期限</th>
+            <th>何時要做</th>
+            <th>事前準備</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- add -->
+    <div class="add-section">
+      <div class="add-btn-row" onclick="openForm()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        新增事項
+      </div>
+      <div class="add-form" id="addForm">
+        <input class="fi fi-full" id="fTask" placeholder="待辦事項 *" maxlength="40">
+        <div class="fi-row">
+          <input class="fi" id="fDue" type="date" placeholder="完成期限">
+          <input class="fi" id="fWhen" placeholder="何時要做（例：週三早上）" maxlength="20">
+        </div>
+        <input class="fi fi-full" id="fPrep" placeholder="事前準備（選填）" maxlength="60">
+        <div class="submit-row">
+          <button class="btn-cancel" onclick="closeForm()">取消</button>
+          <button class="btn-add" onclick="submitItem()">新增</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="btime" id="cardTime"></div>
+</div>
+```
+
+  </div>
+</div>
+
+<!-- Bottom bar -->
+
+<div class="bar">
+  <div class="user-wrap" id="userWrap">
+    <button class="user-btn" onclick="toggleDrop()">
+      <div class="av" id="selfDot" style="width:22px;height:22px;font-size:10px;"></div>
+      <span id="selfName"></span>
+      <span style="font-size:9px;color:#aaa">▾</span>
+    </button>
+    <div class="udrop" id="udrop"></div>
+  </div>
+  <input class="msg-in" id="msgIn" placeholder="傳送訊息…" maxlength="60" onkeydown="if(event.key==='Enter')sendMsg()">
+  <button class="send-btn" id="sendBtn" onclick="sendMsg()" disabled>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <path d="M5 12l14-8-5 8 5 8-14-8z" fill="white"/>
+    </svg>
+  </button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const USERS = [
+  { id:'u1', name:'小明', ini:'明', color:'#4A90E2' },
+  { id:'u2', name:'小美', ini:'美', color:'#E2704A' },
+  { id:'u3', name:'阿強', ini:'強', color:'#9B59B6' },
+  { id:'u4', name:'曉雯', ini:'雯', color:'#E74C3C' },
+];
+let me = USERS[0];
+let nextId = 10;
+let items = [
+  { id:1, task:'訂餐廳', due:'2025-03-20', when:'週四下午', prep:'確認人數', done:false, doneBy:null },
+  { id:2, task:'買飲料', due:'2025-03-21', when:'週五中午', prep:'問大家要什麼', done:false, doneBy:null },
+  { id:3, task:'準備場地', due:'2025-03-21', when:'週五早上', prep:'帶桌布、延長線', done:false, doneBy:null },
+];
+
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function nowTime(){
+  const d=new Date(); 
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function dueCls(dueStr){
+  if(!dueStr) return '';
+  const today=new Date(); today.setHours(0,0,0,0);
+  const due=new Date(dueStr);
+  const diff=(due-today)/(1000*60*60*24);
+  if(diff<0) return 'due-past';
+  if(diff<=2) return 'due-soon';
+  return '';
+}
+function fmtDate(s){
+  if(!s) return '—';
+  const [y,m,d]=s.split('-');
+  return `${m}/${d}`;
+}
+
+function renderRows(){
+  const tb=document.getElementById('tbody');
+  tb.innerHTML=items.map(it=>{
+    const cls=it.done?'done':'';
+    const dCls=it.done?'':dueCls(it.due);
+    const doneByUser=it.doneBy?USERS.find(u=>u.id===it.doneBy):null;
+    const doneTag=doneByUser?`<div class="done-by"><div class="dav" style="background:${doneByUser.color}">${doneByUser.ini}</div>${doneByUser.name}</div>`:'';
+    return `<tr class="${cls}" id="row-${it.id}">
+      <td class="check-cell" onclick="toggle(${it.id})">
+        <div class="ck">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </td>
+      <td class="task-cell">
+        ${esc(it.task)}
+        ${doneTag}
+      </td>
+      <td class="${dCls}">${fmtDate(it.due)}</td>
+      <td>${esc(it.when)||'—'}</td>
+      <td>${esc(it.prep)||'—'}</td>
+    </tr>`;
+  }).join('');
+  updateCount();
+}
+
+function updateCount(){
+  const done=items.filter(i=>i.done).length;
+  const t=items.length;
+  document.getElementById('cardCnt').textContent=`${done}/${t}`;
+  document.getElementById('hBadge').textContent=`${done}/${t}`;
+}
+
+function toggle(id){
+  const it=items.find(i=>i.id===id);
+  if(!it) return;
+  it.done=!it.done;
+  it.doneBy=it.done?me.id:null;
+  if(it.done){
+    showToast(`${me.name} 完成了「${it.task}」✅`);
+    addChatMsg(me,`我完成了「${it.task}」了！`);
+  } else {
+    showToast(`${me.name} 取消了「${it.task}」`);
+  }
+  renderRows();
+}
+
+// ── Add form ──
+function openForm(){
+  document.getElementById('addForm').classList.add('open');
+  document.getElementById('fTask').focus();
+}
+function closeForm(){
+  document.getElementById('addForm').classList.remove('open');
+  ['fTask','fDue','fWhen','fPrep'].forEach(id=>document.getElementById(id).value='');
+}
+function submitItem(){
+  const task=document.getElementById('fTask').value.trim();
+  if(!task){ showToast('請輸入待辦事項'); return; }
+  const item={
+    id:nextId++,
+    task,
+    due:document.getElementById('fDue').value,
+    when:document.getElementById('fWhen').value.trim(),
+    prep:document.getElementById('fPrep').value.trim(),
+    done:false, doneBy:null
+  };
+  items.push(item);
+  closeForm();
+  renderRows();
+  // highlight new row
+  const row=document.getElementById(`row-${item.id}`);
+  if(row) row.classList.add('row-new');
+  showToast(`${me.name} 新增了「${task}」`);
+  addChatMsg(me,`我新增了「${task}」到清單裡～`);
+}
+
+// ── User selector ──
+function renderUserBtn(){
+  const dot=document.getElementById('selfDot');
+  dot.textContent=me.ini; dot.style.background=me.color;
+  document.getElementById('selfName').textContent=me.name;
+  const dd=document.getElementById('udrop');
+  dd.innerHTML=USERS.map(u=>`
+    <div class="uopt ${u.id===me.id?'active':''}" onclick="switchUser('${u.id}')">
+      <div class="av" style="width:24px;height:24px;font-size:11px;background:${u.color}">${u.ini}</div>
+      ${u.name}${u.id===me.id?' ✓':''}
+    </div>`).join('');
+}
+function toggleDrop(){ document.getElementById('udrop').classList.toggle('open'); }
+function switchUser(uid){
+  me=USERS.find(u=>u.id===uid);
+  renderUserBtn();
+  document.getElementById('udrop').classList.remove('open');
+  showToast(`現在以「${me.name}」身份操作`);
+}
+document.addEventListener('click',e=>{
+  const w=document.getElementById('userWrap');
+  if(!w.contains(e.target)) document.getElementById('udrop').classList.remove('open');
+});
+
+// ── Chat msg ──
+function addChatMsg(user, text, isSelf=false){
+  const isSelfUser=user.id===me.id||isSelf;
+  const div=document.createElement('div');
+  div.className=`bwrap${isSelfUser?' me':''}`;
+  div.innerHTML=`
+    <div class="av" style="background:${user.color}">${user.ini}</div>
+    <div class="bcol${isSelfUser?' me':''}">
+      ${!isSelfUser?`<div class="sname">${esc(user.name)}</div>`:''}
+      <div class="tbubble">${esc(text)}</div>
+      <div class="btime">${nowTime()}</div>
+    </div>`;
+  document.getElementById('chat').appendChild(div);
+  document.getElementById('chat').scrollTop=9999;
+}
+
+function sendMsg(){
+  const inp=document.getElementById('msgIn');
+  const t=inp.value.trim(); if(!t) return;
+  inp.value=''; document.getElementById('sendBtn').disabled=true;
+  addChatMsg(me,t,true);
+}
+document.getElementById('msgIn').addEventListener('input',e=>{
+  document.getElementById('sendBtn').disabled=!e.target.value.trim();
+});
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// init
+document.getElementById('cardTime').textContent=nowTime();
+renderUserBtn();
+renderRows();
+</script>
+
+</body>
+</html>
