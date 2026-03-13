@@ -1,0 +1,433 @@
+# Line-todo
+<!DOCTYPE html>
+
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>群組清單</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+
+:root {
+–line-green: #06C755;
+–line-green-dark: #05a847;
+–line-bg: #f0f0f0;
+–bubble-bg: #ffffff;
+–text-main: #1a1a1a;
+–text-sub: #888;
+–checked-bg: #e8faf0;
+–checked-border: #06C755;
+–shadow: 0 2px 12px rgba(0,0,0,0.10);
+–radius: 18px;
+}
+
+- { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+font-family: ‘Noto Sans TC’, sans-serif;
+background: var(–line-bg);
+min-height: 100vh;
+display: flex;
+flex-direction: column;
+max-width: 420px;
+margin: 0 auto;
+}
+
+/* ── Header ── */
+.header {
+background: #fff;
+border-bottom: 1px solid #e0e0e0;
+padding: 14px 18px;
+display: flex;
+align-items: center;
+gap: 12px;
+position: sticky;
+top: 0;
+z-index: 10;
+box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+}
+.header-avatar {
+width: 40px; height: 40px;
+background: var(–line-green);
+border-radius: 50%;
+display: flex; align-items: center; justify-content: center;
+font-size: 20px;
+flex-shrink: 0;
+}
+.header-info { flex: 1 }
+.header-title { font-size: 15px; font-weight: 700; color: var(–text-main); }
+.header-sub { font-size: 12px; color: var(–text-sub); margin-top: 1px; }
+.header-badge {
+background: var(–line-green);
+color: #fff;
+font-size: 11px;
+font-weight: 700;
+border-radius: 12px;
+padding: 3px 9px;
+}
+
+/* ── Chat area ── */
+.chat-area {
+flex: 1;
+padding: 16px 14px 120px;
+display: flex;
+flex-direction: column;
+gap: 12px;
+overflow-y: auto;
+}
+
+/* ── System message ── */
+.sys-msg {
+text-align: center;
+font-size: 11px;
+color: var(–text-sub);
+background: rgba(255,255,255,0.7);
+border-radius: 20px;
+padding: 4px 14px;
+align-self: center;
+}
+
+/* ── Chat bubble wrapper ── */
+.bubble-wrap {
+display: flex;
+align-items: flex-start;
+gap: 8px;
+}
+.bubble-wrap.self { flex-direction: row-reverse; }
+
+.avatar {
+width: 36px; height: 36px;
+border-radius: 50%;
+font-size: 16px;
+display: flex; align-items: center; justify-content: center;
+flex-shrink: 0;
+font-weight: 700;
+color: #fff;
+}
+
+.bubble-col { display: flex; flex-direction: column; gap: 3px; max-width: 85%; }
+.bubble-col.self { align-items: flex-end; }
+.sender-name { font-size: 11px; color: var(–text-sub); padding-left: 4px; }
+
+/* ── Card bubble ── */
+.card {
+background: var(–bubble-bg);
+border-radius: var(–radius);
+box-shadow: var(–shadow);
+overflow: hidden;
+width: 310px;
+max-width: 100%;
+}
+
+.card-header {
+background: var(–line-green);
+padding: 12px 16px;
+display: flex;
+align-items: center;
+gap: 8px;
+}
+.card-header-icon { font-size: 18px; }
+.card-header-title { color: #fff; font-size: 14px; font-weight: 700; flex: 1; }
+.card-header-count {
+background: rgba(255,255,255,0.25);
+color: #fff;
+font-size: 11px;
+font-weight: 700;
+border-radius: 10px;
+padding: 2px 8px;
+}
+
+/* ── Item list ── */
+.item-list { padding: 8px 0; }
+
+.item {
+display: flex;
+align-items: center;
+padding: 10px 14px;
+gap: 10px;
+cursor: pointer;
+transition: background 0.15s;
+border-bottom: 1px solid #f5f5f5;
+-webkit-tap-highlight-color: transparent;
+}
+.item:last-child { border-bottom: none; }
+.item:active { background: #f0f0f0; }
+.item.checked { background: var(–checked-bg); }
+
+.checkbox {
+width: 22px; height: 22px;
+border-radius: 50%;
+border: 2px solid #ccc;
+display: flex; align-items: center; justify-content: center;
+flex-shrink: 0;
+transition: all 0.2s;
+}
+.item.checked .checkbox {
+background: var(–line-green);
+border-color: var(–line-green);
+}
+.checkbox svg { display: none; }
+.item.checked .checkbox svg { display: block; }
+
+.item-text {
+flex: 1;
+font-size: 14px;
+color: var(–text-main);
+line-height: 1.4;
+transition: all 0.2s;
+}
+.item.checked .item-text {
+color: var(–text-sub);
+text-decoration: line-through;
+text-decoration-color: var(–line-green);
+}
+
+.item-checkers {
+display: flex;
+flex-direction: column;
+align-items: flex-end;
+gap: 3px;
+min-width: 60px;
+}
+.checker-avatars { display: flex; gap: 2px; flex-wrap: wrap; justify-content: flex-end; }
+.mini-avatar {
+width: 18px; height: 18px;
+border-radius: 50%;
+font-size: 9px;
+font-weight: 700;
+color: #fff;
+display: flex; align-items: center; justify-content: center;
+border: 1px solid #fff;
+}
+.checker-count { font-size: 10px; color: var(–text-sub); }
+
+/* ── Add item row ── */
+.add-row {
+display: flex;
+align-items: center;
+padding: 10px 14px;
+gap: 8px;
+border-top: 1px solid #eee;
+}
+.add-input {
+flex: 1;
+border: none;
+outline: none;
+font-size: 13px;
+font-family: inherit;
+color: var(–text-main);
+background: transparent;
+}
+.add-input::placeholder { color: #bbb; }
+.add-btn {
+width: 28px; height: 28px;
+background: var(–line-green);
+border: none;
+border-radius: 50%;
+display: flex; align-items: center; justify-content: center;
+cursor: pointer;
+flex-shrink: 0;
+transition: background 0.15s;
+}
+.add-btn:active { background: var(–line-green-dark); }
+
+/* ── Bottom input bar ── */
+.input-bar {
+position: fixed;
+bottom: 0;
+left: 50%;
+transform: translateX(-50%);
+width: 100%;
+max-width: 420px;
+background: #fff;
+border-top: 1px solid #e0e0e0;
+padding: 10px 14px;
+display: flex;
+gap: 8px;
+align-items: center;
+box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
+z-index: 10;
+}
+
+.user-select-wrap { position: relative; }
+.user-select-btn {
+display: flex; align-items: center; gap: 6px;
+background: var(–line-bg);
+border: none;
+border-radius: 20px;
+padding: 7px 12px;
+cursor: pointer;
+font-family: inherit;
+font-size: 13px;
+font-weight: 600;
+color: var(–text-main);
+white-space: nowrap;
+}
+.user-dot {
+width: 24px; height: 24px;
+border-radius: 50%;
+font-size: 11px;
+font-weight: 700;
+color: #fff;
+display: flex; align-items: center; justify-content: center;
+}
+
+.user-dropdown {
+position: absolute;
+bottom: calc(100% + 8px);
+left: 0;
+background: #fff;
+border-radius: 14px;
+box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+overflow: hidden;
+display: none;
+min-width: 140px;
+z-index: 20;
+}
+.user-dropdown.open { display: block; }
+.user-option {
+display: flex; align-items: center; gap: 8px;
+padding: 10px 14px;
+cursor: pointer;
+font-size: 13px;
+color: var(–text-main);
+transition: background 0.1s;
+}
+.user-option:hover { background: var(–line-bg); }
+.user-option.active { background: var(–checked-bg); font-weight: 700; }
+
+.msg-input {
+flex: 1;
+background: var(–line-bg);
+border: none;
+outline: none;
+border-radius: 22px;
+padding: 9px 16px;
+font-size: 14px;
+font-family: inherit;
+color: var(–text-main);
+}
+.send-btn {
+width: 38px; height: 38px;
+background: var(–line-green);
+border: none;
+border-radius: 50%;
+display: flex; align-items: center; justify-content: center;
+cursor: pointer;
+transition: background 0.15s;
+flex-shrink: 0;
+}
+.send-btn:disabled { background: #ccc; cursor: default; }
+.send-btn:not(:disabled):active { background: var(–line-green-dark); }
+
+/* text bubble */
+.text-bubble {
+background: #fff;
+border-radius: 16px;
+padding: 9px 13px;
+font-size: 14px;
+color: var(–text-main);
+line-height: 1.5;
+box-shadow: var(–shadow);
+max-width: 200px;
+}
+.bubble-wrap.self .text-bubble { background: #c8f7d8; }
+
+.time { font-size: 10px; color: var(–text-sub); align-self: flex-end; padding: 0 3px; }
+
+/* toast */
+.toast {
+position: fixed;
+bottom: 80px;
+left: 50%;
+transform: translateX(-50%) translateY(10px);
+background: rgba(0,0,0,0.72);
+color: #fff;
+font-size: 13px;
+border-radius: 20px;
+padding: 8px 18px;
+opacity: 0;
+transition: all 0.3s;
+pointer-events: none;
+z-index: 100;
+white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* pulse animation for new item */
+@keyframes pop { 0%{transform:scale(0.92);opacity:0} 60%{transform:scale(1.03)} 100%{transform:scale(1);opacity:1} }
+.item-new { animation: pop 0.25s ease; }
+</style>
+
+</head>
+<body>
+
+<!-- Header -->
+
+<div class="header">
+  <div class="header-avatar">🏠</div>
+  <div class="header-info">
+    <div class="header-title">朋友群組</div>
+    <div class="header-sub" id="memberCount">4 位成員</div>
+  </div>
+  <div class="header-badge" id="progressBadge">0/0</div>
+</div>
+
+<!-- Chat area -->
+
+<div class="chat-area" id="chatArea">
+  <div class="sys-msg">今天</div>
+
+  <!-- Bot message intro -->
+
+  <div class="bubble-wrap">
+    <div class="avatar" style="background:#06C755;">🤖</div>
+    <div class="bubble-col">
+      <div class="sender-name">小幫手</div>
+      <div class="text-bubble">大家好！以下是共用清單，可以打勾也可以新增項目 👇</div>
+    </div>
+  </div>
+
+  <!-- The main card -->
+
+  <div class="bubble-wrap" id="cardWrap">
+    <div class="avatar" style="background:#06C755;">🤖</div>
+    <div class="bubble-col">
+      <div class="sender-name">小幫手</div>
+      <div class="card" id="mainCard">
+        <div class="card-header">
+          <span class="card-header-icon">✅</span>
+          <span class="card-header-title" id="cardTitle">待辦清單</span>
+          <span class="card-header-count" id="cardCount">0/0</span>
+        </div>
+        <div class="item-list" id="itemList"></div>
+        <div class="add-row" id="addRow">
+          <input class="add-input" id="addInput" type="text" placeholder="新增項目…" maxlength="40">
+          <button class="add-btn" onclick="addItemFromCard()">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M7 1v12M1 7h12" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="time" id="cardTime"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom bar -->
+
+<div class="input-bar">
+  <!-- User selector -->
+  <div class="user-select-wrap" id="userWrap">
+    <button class="user-select-btn" onclick="toggleUserDropdown()">
+      <div class="user-dot" id="selfDot"></div>
+      <span id="selfName"></span>
+      <span style="font-size:10px;color:#888">▾</span>
+    </button>
+    <div class="user-dropdown" id="userDropdown"></div>
+  </div>
+
+  <input class="msg-input" id="msgInput" type="text" placeholder="傳送訊息…" maxlength="60" onkeydown="if(event.key==='Enter')sendMsg()">
+  <button class="send-btn" id="sendBtn
